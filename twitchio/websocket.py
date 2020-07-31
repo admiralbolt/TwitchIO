@@ -82,6 +82,7 @@ class WebsocketConnection:
     def __init__(self, bot, *, loop: asyncio.BaseEventLoop=None, **attrs):
         self._bot = bot
         self.loop = loop or asyncio.get_event_loop()
+        self.should_listen = True
 
         self._token = attrs.get('irc_token')
         self._api_token = attrs.get('api_token')
@@ -313,19 +314,22 @@ class WebsocketConnection:
             raise asyncio.TimeoutError(
                 f'Request to leave the channel "{channel}" has timed out.')
 
+    def stop(self):
+      self.should_listen = False
+
     async def _listen(self):
         backoff = ExponentialBackoff()
 
         if not self.is_connected and self._last_exec:
             raise WSConnectionFailure(f'Websocket connection failure:\n\n{self._last_exec}')
 
-        while True:
+        while self.should_listen:
             if self._authentication_error:
                 log.error('AUTHENTICATION ERROR:: Incorrect IRC Token passed.')
                 raise AuthenticationError
 
             try:
-                data = await self._websocket.recv()
+                data = await asyncio.wait_for(self._websocket.recv(), timeout=5)
             except websockets.ConnectionClosed:
                 retry = backoff.delay()
                 log.info('Websocket closed: Retrying connection in %s seconds...', retry)
@@ -611,11 +615,11 @@ class WebsocketConnection:
     async def event_error(self, error: Exception, data: str=None):
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
-    def teardown(self):
+    async def teardown(self):
         if self._bot._webhook_server:
             self._bot._webhook_server.stop()
 
-        self._websocket.close()
+        await self._websocket.close()
 
 
 class PubSub:
@@ -735,4 +739,3 @@ class PubSub:
                             "auth_token": token}}
 
         await self._websocket.send(json.dumps(payload))
-

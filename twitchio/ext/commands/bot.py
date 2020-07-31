@@ -307,7 +307,10 @@ class Bot(Client):
         except KeyboardInterrupt:
             pass
         finally:
-            self._ws.teardown()
+            loop.run_until_complete(self._ws.teardown())
+
+    def stop(self):
+      self._ws.stop()
 
     async def start(self):
         """|coro|
@@ -327,7 +330,7 @@ class Bot(Client):
         except KeyboardInterrupt:
             pass
         finally:
-            self._ws.teardown()
+            await self._ws.teardown()
 
     async def _prefix_setter(self, item):
         if inspect.iscoroutinefunction(item):
@@ -719,7 +722,7 @@ class Bot(Client):
 
         Parameters
         ------------
-        channel: :class:`.Channel`	
+        channel: :class:`.Channel`
             Channel object relevant to the USERNOTICE event.
         tags : dict
             A dictionary with the relevant information associated with the USERNOTICE.
