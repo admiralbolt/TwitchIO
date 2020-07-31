@@ -337,6 +337,9 @@ class WebsocketConnection:
                 await asyncio.sleep(retry)
                 await self._connect()
                 continue
+            except asyncio.TimeoutError:
+              # Don't really care if it times out, don't bubble the error.
+              continue
 
             await self._dispatch('raw_data', data)
 
