@@ -1,3 +1,9 @@
+The only edits to this fork is adding a somewhat dumb api to allow stopping a bot / websocket client without CTRL-C.
+In my case I was listening in a separate thread and for some ungodly reason windows doesn't support pthread_kill
+so there was no way of actually killing the thread once it started since the KeyboardInterrupt exception was the only way.
+
+Point is, there's now a stop() method on the Bot and the recv() call times out after 5 seconds.
+
 .. image:: https://i.imgur.com/B0nvk2w.png?raw=true
     :align: center
 
